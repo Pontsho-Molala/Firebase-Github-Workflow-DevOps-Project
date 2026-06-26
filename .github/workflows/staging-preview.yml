@@ -27,5 +27,5 @@ jobs:
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
           firebaseServiceAccount: '${{ secrets.FIREBASE_TOKEN_DEV }}'
-          projectId: my-devops-portfolio-dev
+          projectId: my-devops-portfolio-dev-2880d
           channelId: pr-${{ github.event.number }}
