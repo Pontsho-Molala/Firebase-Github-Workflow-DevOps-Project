@@ -1,0 +1,850 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DevOps Metrics Console</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+
+    <!-- Tailwind and global css are compiled via index.css -->
+    <link rel="stylesheet" href="index.css" />
+  </head>
+  <body class="bg-[#09090b] text-[#f4f4f5] font-sans overflow-x-hidden min-h-screen">
+    <!-- Subtle background grid accent -->
+    <div class="absolute inset-0 bg-[linear-gradient(to_right,#18181b_1px,transparent_1px),linear-gradient(to_bottom,#18181b_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none"></div>
+
+    <div class="relative z-10 flex flex-col min-h-screen">
+      
+      <!-- Primary Navigation Dashboard Header -->
+      <header class="sticky top-0 z-45 bg-[#09090b]/80 backdrop-blur-md border-b border-zinc-900 px-4 md:px-6 py-4">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div class="flex items-center space-x-3.5">
+            <div class="relative flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-400 border border-indigo-500/20 shadow-[0_0_15px_rgba(99,102,241,0.2)] shrink-0">
+              <!-- Server Icon (SVG) -->
+              <svg class="w-5.5 h-5.5 text-zinc-950" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="2" width="20" height="8" rx="2" ry="2" />
+                <rect x="2" y="14" width="20" height="8" rx="2" ry="2" />
+                <line x1="6" y1="6" x2="6.01" y2="6" stroke-linecap="round" />
+                <line x1="6" y1="18" x2="6.01" y2="18" stroke-linecap="round" />
+              </svg>
+              <div class="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-[#09090b] animate-pulse-ring"></div>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <h1 class="text-base font-display font-bold text-zinc-100 tracking-tight">DevOps Metrics Console</h1>
+                <span class="bg-zinc-900 border border-zinc-800 text-zinc-500 text-[10px] font-mono px-2 py-0.5 rounded-md font-semibold select-none">
+                  VANILLA v2.5.0
+                </span>
+              </div>
+              <p class="text-xs text-zinc-400 mt-0.5">
+                Dynamic infrastructure telemetry map, automated environment validation, and live pipeline releases.
+              </p>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2.5">
+            <span class="text-[11px] font-mono text-zinc-500 flex items-center gap-1.5 bg-zinc-900/60 border border-zinc-800 px-3 py-1.5 rounded-lg select-none">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 inline-block animate-ping"></span>
+              INGRESS DAEMON ACTIVE
+            </span>
+            
+            <button
+              id="force-sync-btn"
+              class="p-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 rounded-lg text-zinc-300 hover:text-zinc-100 transition-colors flex items-center gap-2 font-mono text-xs cursor-pointer"
+              title="Synchronize all infrastructure cluster nodes manually"
+            >
+              <!-- Refresh Icon -->
+              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H18" />
+              </svg>
+              <span>Force Sync</span>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <!-- Main Contents Grid -->
+      <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 space-y-6 relative z-10">
+        
+        <!-- Cluster Scope Selection Strip -->
+        <div class="bg-zinc-900/40 border border-zinc-900 rounded-xl p-2.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div class="flex items-center space-x-2.5 w-full sm:w-auto">
+            <span class="text-[10px] font-mono tracking-wider text-zinc-500 uppercase px-2 font-bold select-none shrink-0">CLUSTER NODE:</span>
+            <div id="service-selectors" class="flex flex-wrap gap-1.5">
+              <!-- Dynamically populated via JS -->
+            </div>
+          </div>
+
+          <div class="text-right px-2 hidden sm:block">
+            <span class="text-[10px] font-mono text-zinc-500 block">FILTERED SCOPE</span>
+            <span id="active-scope-label" class="text-xs font-semibold text-zinc-300">Global Infrastructure</span>
+          </div>
+        </div>
+
+        <!-- Primary Core KPIs Grid (3 Cards) -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          
+          <!-- Card 1: Server Node Uptime -->
+          <div class="relative group overflow-hidden bg-zinc-900/90 border border-zinc-800 rounded-xl p-5 shadow-lg hover:border-zinc-700/80 transition-all duration-300 flex flex-col justify-between">
+            <div class="absolute -top-12 -left-12 w-24 h-24 bg-zinc-800/10 rounded-full blur-2xl group-hover:bg-zinc-700/20 transition-all duration-500 pointer-events-none"></div>
+            
+            <div class="flex items-start justify-between">
+              <div class="space-y-1">
+                <p class="text-xs font-mono tracking-wider text-zinc-400 uppercase">Server Node Uptime</p>
+                <div class="flex items-baseline space-x-1">
+                  <span id="metric-uptime-val" class="text-2xl font-display font-semibold text-zinc-100 tracking-tight">99.95</span>
+                  <span class="text-sm font-medium text-zinc-400">%</span>
+                </div>
+              </div>
+              <div class="p-2.5 rounded-lg bg-zinc-950/80 border border-zinc-800/80 text-emerald-400">
+                <!-- Activity SVG Icon -->
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              </div>
+            </div>
+
+            <!-- Dynamic percentage bar -->
+            <div class="mt-4 space-y-1.5">
+              <div class="w-full h-1.5 bg-zinc-950 rounded-full overflow-hidden">
+                <div id="metric-uptime-bar" class="h-full rounded-full bg-emerald-500 transition-all duration-500" style="width: 99.95%"></div>
+              </div>
+              <div class="flex justify-between text-[10px] font-mono text-zinc-500">
+                <span>0%</span>
+                <span id="metric-uptime-bar-label">99.95%</span>
+                <span>100%</span>
+              </div>
+            </div>
+
+            <div class="mt-4 flex items-center justify-between border-t border-zinc-800/50 pt-3">
+              <div id="metric-uptime-trend" class="flex items-center space-x-1 px-2 py-0.5 rounded-full border text-[11px] font-mono bg-emerald-500/10 border-emerald-500/20 text-emerald-400">
+                <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                </svg>
+                <span>+0.01%</span>
+              </div>
+              <span class="text-[10px] font-mono text-zinc-500">rolling average (30d)</span>
+            </div>
+          </div>
+
+          <!-- Card 2: Active CI/CD Build Time -->
+          <div class="relative group overflow-hidden bg-zinc-900/90 border border-zinc-800 rounded-xl p-5 shadow-lg hover:border-zinc-700/80 transition-all duration-300 flex flex-col justify-between">
+            <div class="absolute -top-12 -left-12 w-24 h-24 bg-zinc-800/10 rounded-full blur-2xl group-hover:bg-zinc-700/20 transition-all duration-500 pointer-events-none"></div>
+            
+            <div class="flex items-start justify-between">
+              <div class="space-y-1">
+                <p class="text-xs font-mono tracking-wider text-zinc-400 uppercase">Active CI/CD Build Time</p>
+                <div class="flex items-baseline space-x-1">
+                  <span id="metric-buildtime-val" class="text-2xl font-display font-semibold text-zinc-100 tracking-tight">45</span>
+                  <span class="text-sm font-medium text-zinc-400">s</span>
+                </div>
+              </div>
+              <div class="p-2.5 rounded-lg bg-zinc-950/80 border border-zinc-800/80 text-amber-400">
+                <!-- Clock SVG Icon -->
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+            </div>
+
+            <!-- Static Spacer to align heights -->
+            <div class="mt-4 pt-8"></div>
+
+            <div class="mt-4 flex items-center justify-between border-t border-zinc-800/50 pt-3">
+              <div id="metric-buildtime-trend" class="flex items-center space-x-1 px-2 py-0.5 rounded-full border text-[11px] font-mono bg-emerald-500/10 border-emerald-500/20 text-emerald-400">
+                <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                </svg>
+                <span>-8.5%</span>
+              </div>
+              <span class="text-[10px] font-mono text-zinc-500">last pipeline execution</span>
+            </div>
+          </div>
+
+          <!-- Card 3: CDN Cache Hit Rate -->
+          <div class="relative group overflow-hidden bg-zinc-900/90 border border-zinc-800 rounded-xl p-5 shadow-lg hover:border-zinc-700/80 transition-all duration-300 flex flex-col justify-between">
+            <div class="absolute -top-12 -left-12 w-24 h-24 bg-zinc-800/10 rounded-full blur-2xl group-hover:bg-zinc-700/20 transition-all duration-500 pointer-events-none"></div>
+            
+            <div class="flex items-start justify-between">
+              <div class="space-y-1">
+                <p class="text-xs font-mono tracking-wider text-zinc-400 uppercase">CDN Cache Hit Rate</p>
+                <div class="flex items-baseline space-x-1">
+                  <span id="metric-cdn-val" class="text-2xl font-display font-semibold text-zinc-100 tracking-tight">92.4</span>
+                  <span class="text-sm font-medium text-zinc-400">%</span>
+                </div>
+              </div>
+              <div class="p-2.5 rounded-lg bg-zinc-950/80 border border-zinc-800/80 text-cyan-400">
+                <!-- Globe SVG Icon -->
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                </svg>
+              </div>
+            </div>
+
+            <!-- Dynamic percentage bar -->
+            <div class="mt-4 space-y-1.5" id="metric-cdn-bar-container">
+              <div class="w-full h-1.5 bg-zinc-950 rounded-full overflow-hidden">
+                <div id="metric-cdn-bar" class="h-full rounded-full bg-cyan-500 transition-all duration-500" style="width: 92.4%"></div>
+              </div>
+              <div class="flex justify-between text-[10px] font-mono text-zinc-500">
+                <span>0%</span>
+                <span id="metric-cdn-bar-label">92.4%</span>
+                <span>100%</span>
+              </div>
+            </div>
+
+            <div class="mt-4 flex items-center justify-between border-t border-zinc-800/50 pt-3">
+              <div id="metric-cdn-trend" class="flex items-center space-x-1 px-2 py-0.5 rounded-full border text-[11px] font-mono bg-emerald-500/10 border-emerald-500/20 text-emerald-400">
+                <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                </svg>
+                <span>+1.2%</span>
+              </div>
+              <span class="text-[10px] font-mono text-zinc-500">edge nodes distribution</span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Auxiliary Resource Telemetry (3 horizontal small cards) -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          
+          <!-- CPU small card -->
+          <div class="bg-zinc-900/60 border border-zinc-900 rounded-xl p-4 flex items-center justify-between gap-4">
+            <div class="space-y-1 w-full">
+              <span class="text-[10px] font-mono text-zinc-500 uppercase tracking-wider block">CPU Utilization</span>
+              <p class="text-xl font-display font-semibold text-zinc-100 flex items-baseline gap-1.5">
+                <span id="metric-cpu-val">42.5</span>
+                <span class="text-xs font-mono text-zinc-500">%</span>
+              </p>
+              <div class="w-24 h-1 bg-zinc-950 rounded-full overflow-hidden mt-1">
+                <div id="metric-cpu-bar" class="h-full rounded-full bg-indigo-500 transition-all duration-500" style="width: 42.5%"></div>
+              </div>
+            </div>
+            <div class="p-2 bg-zinc-950/80 border border-zinc-800 rounded-lg text-indigo-400 shrink-0">
+              <!-- CPU Icon -->
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <rect x="4" y="4" width="16" height="16" rx="2" />
+                <rect x="9" y="9" width="6" height="6" />
+                <line x1="9" y1="1" x2="9" y2="4" />
+                <line x1="15" y1="1" x2="15" y2="4" />
+                <line x1="9" y1="20" x2="9" y2="23" />
+                <line x1="15" y1="20" x2="15" y2="23" />
+                <line x1="20" y1="9" x2="23" y2="9" />
+                <line x1="20" y1="15" x2="23" y2="15" />
+                <line x1="1" y1="9" x2="4" y2="9" />
+                <line x1="1" y1="15" x2="4" y2="15" />
+              </svg>
+            </div>
+          </div>
+
+          <!-- Memory small card -->
+          <div class="bg-zinc-900/60 border border-zinc-900 rounded-xl p-4 flex items-center justify-between gap-4">
+            <div class="space-y-1 w-full">
+              <span class="text-[10px] font-mono text-zinc-500 uppercase tracking-wider block">Memory Footprint</span>
+              <p class="text-xl font-display font-semibold text-zinc-100 flex items-baseline gap-1.5">
+                <span id="metric-memory-val">68.2</span>
+                <span class="text-xs font-mono text-zinc-500">%</span>
+              </p>
+              <div class="w-24 h-1 bg-zinc-950 rounded-full overflow-hidden mt-1">
+                <div id="metric-memory-bar" class="h-full rounded-full bg-fuchsia-500 transition-all duration-500" style="width: 68.2%"></div>
+              </div>
+            </div>
+            <div class="p-2 bg-zinc-950/80 border border-zinc-800 rounded-lg text-fuchsia-400 shrink-0">
+              <!-- Memory Icon -->
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 5h10a2 2 0 012 2v10a2 2 0 01-2 2H7a2 2 0 01-2-2V7a2 2 0 012-2z" />
+              </svg>
+            </div>
+          </div>
+
+          <!-- Network Bandwidth small card -->
+          <div class="bg-zinc-900/60 border border-zinc-900 rounded-xl p-4 flex items-center justify-between gap-4">
+            <div class="space-y-1 w-full">
+              <span class="text-[10px] font-mono text-zinc-500 uppercase tracking-wider block">Network Bandwidth</span>
+              <div class="space-y-0.5">
+                <p class="text-xs text-zinc-300 flex items-center gap-1 font-mono">
+                  <!-- Down Arrow -->
+                  <svg class="w-3.5 h-3.5 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 13l-7 7m0 0l-7-7m7 7V3" />
+                  </svg>
+                  In: <span id="metric-netin-val">184.2</span> MB/s
+                </p>
+                <p class="text-xs text-zinc-300 flex items-center gap-1 font-mono">
+                  <!-- Up Arrow -->
+                  <svg class="w-3.5 h-3.5 text-cyan-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 11l7-7m0 0l7 7m-7-7v18" />
+                  </svg>
+                  Out: <span id="metric-netout-val">412.8</span> MB/s
+                </p>
+              </div>
+            </div>
+            <div class="p-2 bg-zinc-950/80 border border-zinc-800 rounded-lg text-emerald-400 shrink-0">
+              <!-- Network Icon -->
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+              </svg>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Primary Bento Grid Row (Left: Custom SVG Charts, Right: Controls Panel) -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          
+          <!-- Column 1: Custom Interactive SVG Charts (Spans 8) -->
+          <div class="lg:col-span-8 flex flex-col gap-6">
+            
+            <!-- Chart 1: System Resource Utilization -->
+            <div class="bg-zinc-900/90 border border-zinc-800 rounded-xl p-5 shadow-lg space-y-4">
+              <div class="flex items-center justify-between">
+                <div class="space-y-0.5">
+                  <h3 class="text-sm font-mono tracking-wider text-zinc-300 uppercase">Resource Footprint Trends</h3>
+                  <p class="text-xs text-zinc-500">Real-time aggregate CPU core & RAM allocated nodes</p>
+                </div>
+                <div class="flex items-center space-x-4 text-[11px] font-mono">
+                  <span class="flex items-center gap-1.5 text-indigo-400">
+                    <span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span>
+                    CPU
+                  </span>
+                  <span class="flex items-center gap-1.5 text-fuchsia-400">
+                    <span class="w-2.5 h-2.5 rounded-full bg-fuchsia-500"></span>
+                    Memory
+                  </span>
+                </div>
+              </div>
+
+              <!-- Interactive Chart Canvas -->
+              <div class="relative h-64 w-full" id="resource-chart-container">
+                <!-- SVG element generated dynamically by JS -->
+                <svg id="resource-chart-svg" class="w-full h-full overflow-visible"></svg>
+                
+                <!-- Floating tooltip -->
+                <div id="chart-tooltip" class="absolute hidden bg-zinc-950/95 border border-zinc-800 p-3 rounded-lg shadow-xl font-mono text-xs text-zinc-300 pointer-events-none z-30 space-y-1">
+                  <!-- Contents injected via JS -->
+                </div>
+              </div>
+            </div>
+
+            <!-- Chart 2: Incoming Requests and Cache Efficiency -->
+            <div class="bg-zinc-900/90 border border-zinc-800 rounded-xl p-5 shadow-lg space-y-4">
+              <div class="flex items-center justify-between">
+                <div class="space-y-0.5">
+                  <h3 class="text-sm font-mono tracking-wider text-zinc-300 uppercase">Traffic & CDN Cache Health</h3>
+                  <p class="text-xs text-zinc-500">Incoming request loads vs edge replication cache hits</p>
+                </div>
+                <div class="flex items-center space-x-4 text-[11px] font-mono">
+                  <span class="flex items-center gap-1.5 text-sky-400">
+                    <span class="w-3 h-0.5 bg-sky-450 inline-block"></span>
+                    Traffic (req/s)
+                  </span>
+                  <span class="flex items-center gap-1.5 text-emerald-400">
+                    <span class="w-3 h-0.5 bg-emerald-400 inline-block"></span>
+                    CDN Cache (%)
+                  </span>
+                </div>
+              </div>
+
+              <!-- Interactive Traffic Chart Canvas -->
+              <div class="relative h-64 w-full" id="traffic-chart-container">
+                <!-- SVG element generated dynamically by JS -->
+                <svg id="traffic-chart-svg" class="w-full h-full overflow-visible"></svg>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Column 2: Dashboard Settings and Simulations Panel (Spans 4) -->
+          <div class="lg:col-span-4">
+            <div class="bg-zinc-900/90 border border-zinc-800 rounded-xl p-5 shadow-lg space-y-6">
+              
+              <div class="border-b border-zinc-800/60 pb-3">
+                <div class="flex items-center space-x-2">
+                  <!-- Settings Icon -->
+                  <svg class="w-4 h-4 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  <h3 class="text-sm font-mono tracking-wider text-zinc-300 uppercase">Simulator Controls</h3>
+                </div>
+                <p class="text-xs text-zinc-500 mt-1">Interactively inject faults and simulate live production telemetry fluctuations.</p>
+              </div>
+
+              <!-- Simulator Controls list -->
+              <div class="space-y-4">
+                
+                <!-- Stream Toggle -->
+                <div class="flex items-center justify-between bg-zinc-950 p-3 rounded-lg border border-zinc-850">
+                  <div>
+                    <p class="text-xs font-semibold text-zinc-200">Live Telemetry Feed</p>
+                    <p class="text-[10px] text-zinc-500">Update fluctuations every 3s.</p>
+                  </div>
+                  <button
+                    id="toggle-stream-btn"
+                    class="px-3 py-1.5 rounded text-[11px] font-mono cursor-pointer transition-all bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-semibold"
+                  >
+                    ACTIVE FEED
+                  </button>
+                </div>
+
+                <!-- Spike Traffic Toggle -->
+                <div class="flex items-center justify-between bg-zinc-950 p-3 rounded-lg border border-zinc-850">
+                  <div class="space-y-0.5">
+                    <div class="flex items-center gap-1.5">
+                      <!-- Lightning Icon -->
+                      <svg id="spike-icon" class="w-3.5 h-3.5 text-zinc-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                      <p class="text-xs font-semibold text-zinc-200">Simulate Traffic Spike</p>
+                    </div>
+                    <p class="text-[10px] text-zinc-500">Triggers 1.8x traffic load & CPU spikes.</p>
+                  </div>
+                  <button
+                    id="toggle-spike-btn"
+                    class="px-3 py-1.5 rounded text-[11px] font-mono cursor-pointer transition-all bg-zinc-800 border border-zinc-700 text-zinc-400 hover:text-zinc-200"
+                  >
+                    TRIGGER
+                  </button>
+                </div>
+
+                <!-- Degrade CDN Cache Toggle -->
+                <div class="flex items-center justify-between bg-zinc-950 p-3 rounded-lg border border-zinc-850">
+                  <div class="space-y-0.5">
+                    <div class="flex items-center gap-1.5">
+                      <!-- CloudOff Icon -->
+                      <svg id="degrade-icon" class="w-3.5 h-3.5 text-zinc-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 3l18 18M9.013 9.013A3.5 3.5 0 0012 15c.53 0 1.026-.118 1.472-.328M19.78 14.22c.14-.38.22-.79.22-1.22a5 5 0 00-5-5c-.43 0-.84.08-1.22.22m-2.18-2.18A8.008 8.008 0 0012 4c-4.42 0-8 3.58-8 8 0 1.55.44 2.99 1.2 4.22m14.02-2.18l1.414 1.414" />
+                      </svg>
+                      <p class="text-xs font-semibold text-zinc-200">Degrade Cache Hit Rate</p>
+                    </div>
+                    <p class="text-[10px] text-zinc-500">Forcibly drops cache hit rate below 65%.</p>
+                  </div>
+                  <button
+                    id="toggle-degrade-btn"
+                    class="px-3 py-1.5 rounded text-[11px] font-mono cursor-pointer transition-all bg-zinc-800 border border-zinc-700 text-zinc-400 hover:text-zinc-200"
+                  >
+                    DEGRADE
+                  </button>
+                </div>
+
+              </div>
+
+              <!-- Alert Threshold -->
+              <div class="space-y-3.5">
+                <div>
+                  <div class="flex justify-between text-xs font-mono text-zinc-400 mb-1.5">
+                    <span>CPU ALERT THRESHOLD</span>
+                    <span id="cpu-threshold-label" class="text-indigo-400 font-semibold">80%</span>
+                  </div>
+                  <input
+                    id="cpu-threshold-slider"
+                    type="range"
+                    min="50"
+                    max="95"
+                    value="80"
+                    class="w-full h-1 bg-zinc-950 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+                  />
+                  <span class="text-[9px] font-mono text-zinc-600 block mt-1">Values above will trigger an active critical incident alert.</span>
+                </div>
+              </div>
+
+              <!-- Inbound Anomaly Injector -->
+              <div class="bg-zinc-950 p-3 rounded-lg border border-zinc-850 space-y-3">
+                <p class="text-xs font-semibold text-zinc-200">Inject Simulated Incident</p>
+                <div class="flex gap-2">
+                  <select
+                    id="anomaly-selector"
+                    class="flex-1 bg-zinc-900 border border-zinc-800 rounded px-2 py-1.5 text-xs text-zinc-300 font-mono focus:outline-none focus:border-zinc-700"
+                  >
+                    <option value="database-replica">Postgres DB Replica Pool</option>
+                    <option value="production-api">Production API Gateway</option>
+                    <option value="edge-cdn">Cloudflare Edge Nodes</option>
+                  </select>
+                  <button
+                    id="inject-anomaly-btn"
+                    class="bg-rose-600 hover:bg-rose-500 text-zinc-100 font-mono text-[11px] px-3.5 py-1.5 rounded border border-rose-500/30 transition-all font-semibold cursor-pointer"
+                  >
+                    Inject Error
+                  </button>
+                </div>
+              </div>
+
+              <!-- Collapse Configuration Panel -->
+              <div class="border-t border-zinc-800/60 pt-4">
+                <button
+                  id="toggle-config-btn"
+                  class="flex items-center justify-between w-full text-zinc-400 hover:text-zinc-200 text-xs font-mono cursor-pointer"
+                >
+                  <span class="flex items-center gap-2">
+                    <!-- FileJson Icon -->
+                    <svg class="w-4 h-4 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    VIEW DEPLOYMENT CONFIGS
+                  </span>
+                  <!-- Chevron Icon -->
+                  <svg id="config-chevron" class="w-4 h-4 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                <div id="config-content-area" class="mt-4 space-y-3 hidden">
+                  <!-- firebase.json -->
+                  <div class="space-y-1">
+                    <span class="text-[10px] font-mono text-zinc-500 block">firebase.json (SPA rewrite rules)</span>
+                    <pre class="bg-zinc-950/80 border border-zinc-850 rounded-lg p-2.5 font-mono text-[10px] text-zinc-400 overflow-x-auto select-all">
+{
+  "hosting": {
+    "public": "dist",
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}</pre>
+                  </div>
+
+                  <!-- .firebaserc -->
+                  <div class="space-y-1">
+                    <span class="text-[10px] font-mono text-zinc-500 block">.firebaserc (Targets alias)</span>
+                    <pre class="bg-zinc-950/80 border border-zinc-850 rounded-lg p-2.5 font-mono text-[10px] text-zinc-400 overflow-x-auto select-all">
+{
+  "projects": {
+    "dev-env": "YOUR_DEV_PROJECT_ID",
+    "prod-env": "YOUR_PROD_PROJECT_ID"
+  }
+}</pre>
+                  </div>
+
+                  <div class="flex items-start gap-1.5 bg-indigo-950/20 border border-indigo-900/30 rounded-lg p-3 text-[10px] text-indigo-300 leading-normal">
+                    <!-- Info icon -->
+                    <svg class="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>
+                      Use <code class="bg-zinc-950 px-1 rounded font-semibold">firebase use dev-env</code> to build & target staging, or <code class="bg-zinc-950 px-1 rounded font-semibold">firebase use prod-env</code> to publish directly to production edge endpoints.
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+
+        <!-- CI/CD Pipeline Engine Panel -->
+        <div class="bg-zinc-900/90 border border-zinc-800 rounded-xl p-5 shadow-lg space-y-6">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-zinc-800/60 pb-4">
+            <div class="space-y-1">
+              <h3 class="text-sm font-mono tracking-wider text-zinc-300 uppercase flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
+                Active CI/CD Build Engine
+              </h3>
+              <p class="text-xs text-zinc-500">
+                Automated continuous delivery integrations mapping to staging or production target releases.
+              </p>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2">
+              <!-- Target Env Toggle -->
+              <div class="flex bg-zinc-950 p-1 rounded-lg border border-zinc-800 text-xs">
+                <button 
+                  id="target-dev-btn"
+                  class="px-3 py-1.5 rounded-md font-mono transition-all duration-200 bg-zinc-800 text-indigo-400 font-semibold cursor-pointer"
+                >
+                  dev-env
+                </button>
+                <button 
+                  id="target-prod-btn"
+                  class="px-3 py-1.5 rounded-md font-mono transition-all duration-200 text-zinc-400 hover:text-zinc-200 cursor-pointer"
+                >
+                  prod-env
+                </button>
+              </div>
+
+              <button
+                id="trigger-build-btn"
+                class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 disabled:bg-zinc-800 text-zinc-100 disabled:text-zinc-600 disabled:border-zinc-800 font-mono text-xs px-4 py-2.5 rounded-lg border border-indigo-500/30 transition-all font-semibold cursor-pointer"
+              >
+                <!-- Play Icon -->
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                </svg>
+                <span>Trigger Build</span>
+              </button>
+
+              <button
+                id="reset-build-btn"
+                class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-mono text-xs px-3 py-2.5 rounded-lg border border-zinc-700/50 transition-all cursor-pointer hidden"
+              >
+                Reset
+              </button>
+            </div>
+          </div>
+
+          <!-- Horizontal Pipeline Steps Nodes -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 relative">
+            
+            <!-- Step 1: Lint -->
+            <div id="step-0" class="p-4 rounded-xl border border-zinc-800 bg-zinc-950/40 flex items-center justify-between transition-all duration-300">
+              <div class="flex items-center space-x-3 min-w-0">
+                <div id="step-icon-0" class="p-2 rounded-lg bg-zinc-900 text-zinc-500">
+                  <!-- FileCode Icon -->
+                  <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                  </svg>
+                </div>
+                <div class="min-w-0">
+                  <span class="text-[10px] font-mono text-zinc-500 block">STAGE 01</span>
+                  <p class="text-xs font-medium text-zinc-200">Static Code Lint</p>
+                  <span id="step-dur-0" class="text-[10px] font-mono text-zinc-400 mt-0.5 block hidden">Took --s</span>
+                  <span id="step-err-0" class="text-[10px] font-mono text-rose-400 mt-0.5 block hidden"></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 2: Test -->
+            <div id="step-1" class="p-4 rounded-xl border border-zinc-800 bg-zinc-950/40 flex items-center justify-between transition-all duration-300">
+              <div class="flex items-center space-x-3 min-w-0">
+                <div id="step-icon-1" class="p-2 rounded-lg bg-zinc-900 text-zinc-500">
+                  <!-- Beaker Icon -->
+                  <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                  </svg>
+                </div>
+                <div class="min-w-0">
+                  <span class="text-[10px] font-mono text-zinc-500 block">STAGE 02</span>
+                  <p class="text-xs font-medium text-zinc-200">Integration Testing</p>
+                  <span id="step-dur-1" class="text-[10px] font-mono text-zinc-400 mt-0.5 block hidden">Took --s</span>
+                  <span id="step-err-1" class="text-[10px] font-mono text-rose-400 mt-0.5 block hidden"></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 3: Build -->
+            <div id="step-2" class="p-4 rounded-xl border border-zinc-800 bg-zinc-950/40 flex items-center justify-between transition-all duration-300">
+              <div class="flex items-center space-x-3 min-w-0">
+                <div id="step-icon-2" class="p-2 rounded-lg bg-zinc-900 text-zinc-500">
+                  <!-- Archive Icon -->
+                  <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                  </svg>
+                </div>
+                <div class="min-w-0">
+                  <span class="text-[10px] font-mono text-zinc-500 block">STAGE 03</span>
+                  <p class="text-xs font-medium text-zinc-200">Vite Build Package</p>
+                  <span id="step-dur-2" class="text-[10px] font-mono text-zinc-400 mt-0.5 block hidden">Took --s</span>
+                  <span id="step-err-2" class="text-[10px] font-mono text-rose-400 mt-0.5 block hidden"></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 4: Deploy -->
+            <div id="step-3" class="p-4 rounded-xl border border-zinc-800 bg-zinc-950/40 flex items-center justify-between transition-all duration-300">
+              <div class="flex items-center space-x-3 min-w-0">
+                <div id="step-icon-3" class="p-2 rounded-lg bg-zinc-900 text-zinc-500">
+                  <!-- Rocket Icon -->
+                  <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                  </svg>
+                </div>
+                <div class="min-w-0">
+                  <span class="text-[10px] font-mono text-zinc-500 block">STAGE 04</span>
+                  <p class="text-xs font-medium text-zinc-200">Firebase Edge Release</p>
+                  <span id="step-dur-3" class="text-[10px] font-mono text-zinc-400 mt-0.5 block hidden">Took --s</span>
+                  <span id="step-err-3" class="text-[10px] font-mono text-rose-400 mt-0.5 block hidden"></span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Build Console logs -->
+          <div class="bg-zinc-950 border border-zinc-800/85 rounded-xl p-4 overflow-hidden shadow-inner flex flex-col h-44">
+            <div class="flex items-center justify-between border-b border-zinc-900 pb-2 mb-2 text-[10px] font-mono text-zinc-500">
+              <div class="flex items-center space-x-2">
+                <!-- Terminal icon -->
+                <svg class="w-3.5 h-3.5 text-zinc-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <span>PIPELINE BUILD TELEMETRY LOGS</span>
+              </div>
+              <div class="flex items-center space-x-2">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+                <span>STANDBY</span>
+              </div>
+            </div>
+
+            <div id="pipeline-console-area" class="flex-1 overflow-y-auto font-mono text-xs text-zinc-300 space-y-1.5 scrollbar-thin select-text">
+              <div class="text-zinc-600 text-center py-8">CI/CD agent standby. Telemetry logs will print on build trigger.</div>
+            </div>
+          </div>
+
+          <!-- Inject Failure Options inside pipeline panel -->
+          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-zinc-950/60 border border-zinc-800/50 rounded-xl p-4 text-xs">
+            <div class="flex items-center space-x-2">
+              <!-- Alarm icon -->
+              <svg class="w-4 h-4 text-amber-500 shrink-0 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <div>
+                <p class="font-medium text-zinc-300">Build Failure Simulator</p>
+                <p class="text-zinc-500 text-[11px]">Inject faults to verify release isolation, safety, and recovery diagnostics.</p>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
+              <label class="flex items-center space-x-2 cursor-pointer text-zinc-400 font-mono text-[11px] select-none">
+                <input 
+                  id="inject-build-fail-checkbox"
+                  type="checkbox"
+                  class="rounded bg-zinc-900 border-zinc-800 text-indigo-500 focus:ring-zinc-800 w-3.5 h-3.5"
+                />
+                <span>Force Compile Crash</span>
+              </label>
+
+              <select
+                id="fail-step-selector"
+                class="bg-zinc-900 border border-zinc-800 rounded px-2 py-1 text-[11px] font-mono text-zinc-300 focus:outline-none focus:ring-1 focus:ring-indigo-500 hidden"
+              >
+                <option value="0">Stage 01: Lint Error</option>
+                <option value="1">Stage 02: Test Failure</option>
+                <option value="2">Stage 03: Build Crash</option>
+                <option value="3">Stage 04: Deploy Expired</option>
+              </select>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Alerts & Log Streaming section (2 columns) -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          
+          <!-- Column 1: Core Incidents Alert Board (Spans 5) -->
+          <div class="lg:col-span-5 bg-zinc-900/90 border border-zinc-800 rounded-xl p-5 shadow-lg flex flex-col h-[400px]">
+            <div class="flex items-center justify-between border-b border-zinc-800/60 pb-3 mb-4 shrink-0">
+              <div class="flex items-center space-x-2">
+                <!-- ShieldAlert Icon -->
+                <svg class="w-4 h-4 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m0-6V9m12 3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <h3 class="text-sm font-mono tracking-wider text-zinc-300 uppercase">Active Core Incidents</h3>
+              </div>
+              <span id="unacknowledged-incidents-count" class="bg-rose-500/10 border border-rose-500/30 text-rose-400 text-[10px] font-mono px-2 py-0.5 rounded-full select-none">
+                0 unacknowledged
+              </span>
+            </div>
+
+            <!-- Active incident items -->
+            <div id="incidents-container" class="flex-1 overflow-y-auto space-y-3 pr-1 scrollbar-thin">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+
+          <!-- Column 2: Streaming Infrastructure Log Terminal (Spans 7) -->
+          <div class="lg:col-span-7 bg-zinc-900/90 border border-zinc-800 rounded-xl p-5 shadow-lg flex flex-col h-[400px]">
+            
+            <!-- Toolbar header -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800/60 pb-3 mb-4 shrink-0">
+              <div class="flex items-center space-x-2">
+                <!-- Terminal Icon -->
+                <svg class="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <h3 class="text-sm font-mono tracking-wider text-zinc-300 uppercase">Streaming Infrastructure Logs</h3>
+              </div>
+
+              <div class="flex items-center gap-2">
+                <button
+                  id="toggle-log-stream-btn"
+                  class="p-1.5 rounded-lg border text-[11px] font-mono flex items-center gap-1.5 cursor-pointer transition-all bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+                >
+                  <span id="log-play-dot" class="w-2 h-2 rounded-full bg-emerald-400 inline-block animate-pulse"></span>
+                  <span id="log-play-label">LIVE</span>
+                </button>
+
+                <button
+                  id="clear-logs-btn"
+                  class="p-1.5 bg-zinc-800 hover:bg-zinc-750 text-zinc-400 hover:text-zinc-200 rounded-lg border border-zinc-700/50 text-[11px] flex items-center gap-1 cursor-pointer transition-colors"
+                  title="Clear diagnostic log output logs"
+                >
+                  <!-- Trash SVG -->
+                  <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  <span>Clear</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Filters & Search strip -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mb-3.5 shrink-0">
+              <div class="relative">
+                <!-- Search icon -->
+                <svg class="absolute left-2.5 top-2.5 w-3.5 h-3.5 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <input
+                  id="logs-search-input"
+                  type="text"
+                  placeholder="Filter by keyword..."
+                  class="w-full bg-zinc-950 border border-zinc-800/80 rounded-lg pl-8 pr-3 py-1.5 text-xs text-zinc-200 font-mono placeholder-zinc-600 focus:outline-none focus:border-zinc-750"
+                />
+              </div>
+
+              <select
+                id="logs-level-selector"
+                class="bg-zinc-950 border border-zinc-800/80 rounded-lg px-2 py-1.5 text-xs text-zinc-300 font-mono focus:outline-none focus:border-zinc-750"
+              >
+                <option value="ALL">Severity: ALL LEVELS</option>
+                <option value="INFO">Severity: INFO</option>
+                <option value="SUCCESS">Severity: SUCCESS</option>
+                <option value="WARN">Severity: WARN</option>
+                <option value="ERROR">Severity: ERROR</option>
+              </select>
+
+              <select
+                id="logs-service-selector"
+                class="bg-zinc-950 border border-zinc-800/80 rounded-lg px-2 py-1.5 text-xs text-zinc-300 font-mono focus:outline-none focus:border-zinc-750"
+              >
+                <option value="ALL">Service: ALL SERVICES</option>
+                <option value="production-api">Service: production-api</option>
+                <option value="staging-env">Service: staging-env</option>
+                <option value="edge-cdn">Service: edge-cdn</option>
+                <option value="database-replica">Service: database-replica</option>
+              </select>
+            </div>
+
+            <!-- Streaming log container -->
+            <div id="streaming-logs-container" class="flex-1 bg-zinc-950 border border-zinc-800/80 rounded-xl p-4 overflow-y-auto font-mono text-[11px] text-zinc-300 space-y-2 scrollbar-thin select-text">
+              <!-- Rendered dynamically by JS -->
+            </div>
+
+          </div>
+
+        </div>
+
+      </main>
+
+      <!-- Footer mapping details -->
+      <footer class="bg-zinc-950 border-t border-zinc-900 py-6 px-4 md:px-6 mt-12 text-center text-xs text-zinc-500 font-mono relative z-10">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div class="flex items-center gap-2">
+            <span class="w-1.5 h-1.5 rounded-full bg-indigo-500 inline-block"></span>
+            <span>DevOps Configuration mapping: <code class="bg-zinc-900 text-zinc-400 px-1 py-0.5 rounded border border-zinc-800">firebase.json</code> & <code class="bg-zinc-900 text-zinc-400 px-1 py-0.5 rounded border border-zinc-800">.firebaserc</code> generated cleanly.</span>
+          </div>
+          <span class="text-[11px]">
+            goitsek23@gmail.com • AI Studio Sandbox Workspace v2026
+          </span>
+        </div>
+      </footer>
+
+    </div>
+
+    <!-- Script Entry point -->
+    <script  src="main.js"></script>
+  </body>
+</html>

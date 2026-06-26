@@ -1,0 +1,31 @@
+name: Deploy Staging Preview
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  deploy_preview:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      checks: write   # 👈 required for Firebase action to create check runs
+    env:
+      ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true  # temporary override
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.18.0
+
+      - name: Deploy to Firebase Dev Environment
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: '${{ secrets.GITHUB_TOKEN }}'
+          firebaseServiceAccount: '${{ secrets.FIREBASE_TOKEN_DEV }}'
+          projectId: my-devops-portfolio-dev
+          channelId: pr-${{ github.event.number }}
